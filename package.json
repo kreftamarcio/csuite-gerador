@@ -1,0 +1,37 @@
+{
+  "name": "csuite-gerador",
+  "version": "5.5.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "jest --ci",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "^15",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "zod": "^3.23",
+    "groq-sdk": "^0.8"
+  },
+  "devDependencies": {
+    "@types/jest": "^29",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "jest": "^29",
+    "ts-jest": "^29",
+    "typescript": "^5"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "transform": {
+      "^.+\\.tsx?$": [
+        "ts-jest",
+        { "tsconfig": { "module": "CommonJS", "verbatimModuleSyntax": false } }
+      ]
+    }
+  }
+}
