@@ -62,7 +62,10 @@ export function validar(
   }
 
   // 4. Procedência numérica (todo R$ deve estar no set permitido)
-  const valoresEncontrados = md.match(/R\$\s?[\d.]+/g) ?? [];
+  // Regex preciso de moeda pt-BR: casa "R$ 4.997" mesmo seguido de ponto final
+  // ("custa R$ 4.997.") sem engolir a pontuacao — evita falso positivo que
+  // disparava retries desnecessarios (3x tokens/latencia = amplificacao/DoS).
+  const valoresEncontrados = md.match(/R\$\s?\d{1,3}(?:\.\d{3})*(?:,\d{2})?/g) ?? [];
   for (const raw of valoresEncontrados) {
     const normalizado = raw.replace(/\s+/g, " ").trim();
     if (!permitidos.has(normalizado)) {

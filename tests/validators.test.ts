@@ -12,6 +12,17 @@ test("pega numero sem procedencia", () => {
   expect(v.some((x) => x.detalhe.includes("R$ 8.888"))).toBe(true);
 });
 
+test("tolera ponto final apos numero valido (nao e falso positivo)", () => {
+  // Regressao: antes o regex engolia o ponto -> "R$ 2.997." reprovava indevidamente
+  const v = validar(FAKE_MD + "o plano custa R$ 2.997.", permitidos, null);
+  expect(v.filter((x) => x.tipo === "numero")).toHaveLength(0);
+});
+
+test("ainda pega numero invalido colado em pontuacao", () => {
+  const v = validar(FAKE_MD + "cobram R$ 8.888.", permitidos, null);
+  expect(v.some((x) => x.detalhe.includes("R$ 8.888"))).toBe(true);
+});
+
 test("pega vocabulario proibido", () => {
   const v = validar(FAKE_MD + "nosso chatbot responde", permitidos, null);
   expect(v.some((x) => x.detalhe.includes("chatbot"))).toBe(true);

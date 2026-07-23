@@ -4,19 +4,28 @@ import { validar, Violacao } from "@/lib/validators";
 import { chamarLLM } from "@/lib/llm";
 import { rateLimit } from "@/lib/ratelimit";
 import { SYSTEM_PROMPT } from "@/lib/prompt";
+import { createHash, timingSafeEqual } from "node:crypto";
 
 export const runtime = "nodejs";
 export const maxDuration = 120; // Vercel Pro: até 300s; Hobby: 60s
 
 const MAX_TENTATIVAS = 3;
 
+// Comparacao constante no tempo (evita timing attack) + fail-closed:
+// sem API_SECRET no ambiente, NENHUMA requisicao e autorizada.
+function segredoConfere(fornecido: string | null): boolean {
+  const esperado = process.env.API_SECRET;
+  if (!esperado || !fornecido) return false;
+  const h = (s: string) => createHash("sha256").update(s).digest();
+  return timingSafeEqual(h(fornecido), h(esperado));
+}
+
 export async function POST(req: Request) {
   const reqId = crypto.randomUUID();
   const start = Date.now();
 
-  // 0. Auth (uso interno — protege contra abuso)
-  const secret = req.headers.get("x-api-secret");
-  if (secret !== process.env.API_SECRET) {
+  // 0. Auth constante no tempo + fail-closed
+  if (!segredoConfere(req.headers.get("x-api-secret"))) {
     return Response.json({ erro: "NAO_AUTORIZADO" }, { status: 401 });
   }
 
@@ -92,9 +101,11 @@ export async function POST(req: Request) {
     try {
       saida = await chamarLLM({ system: system + feedback, tentativa: t });
     } catch (e: any) {
-      console.error(JSON.stringify({ reqId, tentativa: t, erro: String(e) }));
+      // Detalhe do erro fica SO no log do servidor; a resposta ao cliente
+      // nao vaza internals (nome de env, stack, config do provedor).
+      console.error(JSON.stringify({ reqId, tentativa: t, erro: String(e?.message ?? e) }));
       return Response.json(
-        { reqId, erro: "LLM_INDISPONIVEL", detalhe: String(e.message ?? e) },
+        { reqId, erro: "LLM_INDISPONIVEL" },
         { status: 503 }
       );
     }
