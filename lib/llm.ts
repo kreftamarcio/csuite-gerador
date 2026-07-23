@@ -15,6 +15,8 @@ export async function chamarLLM(args: {
   system: string;
   user?: string;
   tentativa?: number;
+  json?: boolean;        // força response_format json_object (usado pelos agentes CEO)
+  temperatura?: number;  // default 0.4
 }): Promise<string> {
   const model = process.env.LLM_MODEL ?? "llama-3.3-70b-versatile";
 
@@ -22,8 +24,9 @@ export async function chamarLLM(args: {
     try {
       const completion = await getGroq().chat.completions.create({
         model,
-        temperature: 0.4,
+        temperature: args.temperatura ?? 0.4,
         max_tokens: 4096,
+        ...(args.json ? { response_format: { type: "json_object" as const } } : {}),
         messages: [
           { role: "system", content: args.system },
           {

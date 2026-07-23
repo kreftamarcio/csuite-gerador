@@ -80,6 +80,11 @@ export default function Home() {
 
   return (
     <main>
+      <nav className="nav">
+        <a href="/" className="ativo">Gerador</a>
+        <a href="/equipe">Equipe C-Suite</a>
+      </nav>
+
       <div className="header">
         <h1>
           C-Suite AI — Gerador<span className="badge">v5.5</span>

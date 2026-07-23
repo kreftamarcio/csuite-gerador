@@ -4,21 +4,12 @@ import { validar, Violacao } from "@/lib/validators";
 import { chamarLLM } from "@/lib/llm";
 import { rateLimit } from "@/lib/ratelimit";
 import { SYSTEM_PROMPT } from "@/lib/prompt";
-import { createHash, timingSafeEqual } from "node:crypto";
+import { segredoConfere } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const maxDuration = 120; // Vercel Pro: até 300s; Hobby: 60s
 
 const MAX_TENTATIVAS = 3;
-
-// Comparacao constante no tempo (evita timing attack) + fail-closed:
-// sem API_SECRET no ambiente, NENHUMA requisicao e autorizada.
-function segredoConfere(fornecido: string | null): boolean {
-  const esperado = process.env.API_SECRET;
-  if (!esperado || !fornecido) return false;
-  const h = (s: string) => createHash("sha256").update(s).digest();
-  return timingSafeEqual(h(fornecido), h(esperado));
-}
 
 export async function POST(req: Request) {
   const reqId = crypto.randomUUID();
