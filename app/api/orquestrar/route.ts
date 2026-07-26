@@ -3,7 +3,7 @@ import { segredoConfere } from "@/lib/auth";
 import { rateLimit } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 60; // Limite do plano Vercel Hobby (Pro suporta até 300s)
 
 // Orquestracao integrada: CEO WhatsApp -> Loop (decisao) -> CEO Comercial.
 // Multiplas chamadas ao modelo encadeadas com aterramento entre etapas.

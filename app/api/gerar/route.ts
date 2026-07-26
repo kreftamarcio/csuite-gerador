@@ -7,7 +7,7 @@ import { SYSTEM_PROMPT } from "@/lib/prompt";
 import { segredoConfere } from "@/lib/auth";
 
 export const runtime = "nodejs";
-export const maxDuration = 120; // Vercel Pro: até 300s; Hobby: 60s
+export const maxDuration = 60; // Limite do plano Vercel Hobby (Pro suporta até 300s)
 
 const MAX_TENTATIVAS = 3;
 

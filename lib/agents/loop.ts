@@ -24,9 +24,14 @@ export const LOOP_META: AgenteMeta = {
 export const EventoSchema = z.discriminatedUnion("tipo", [
   z.object({ tipo: z.literal("lead_fechado"), lead: z.string().min(1).max(120), perfil: z.string().max(200).optional() }),
   z.object({ tipo: z.literal("leads_frios_seguidos"), quantidade: z.number().int().min(1).max(1000), campanha: z.string().max(120).optional() }),
-  z.object({ tipo: z.literal("review_negativa"), autor: z.string().min(1).max(120), nota: z.number().min(1).max(5), e_cliente: z.boolean(), texto: z.string().max(1500).optional() }),
+  z.object({ tipo: z.literal("review_negativa"), autor: z.string().min(1).max(120), nota: z.number().min(1).max(3), e_cliente: z.boolean(), texto: z.string().max(1500).optional() }),
 ]);
 export type EventoLoop = z.infer<typeof EventoSchema>;
+
+// Limiar de qualificacao de lead, em codigo (nao no prompt): score >= 60.
+// Espelha a instrucao dada ao CEO WhatsApp em ceoWhatsapp.ts, mas aqui vira
+// regra que o modelo nao pode contornar retornando um "qualificado" solto.
+const SCORE_QUALIFICACAO = 60;
 
 export interface Handoff {
   de: string;
@@ -120,8 +125,12 @@ export async function orquestrarLeadNovo(input: JornadaInput): Promise<Resultado
   });
   timeline.push({ agente: "CEO WhatsApp", papel: "Atendimento e qualificacao", saida: q });
 
-  // Decisao do Loop — DETERMINISTICA (nao e o modelo que decide o handoff)
-  const pronto = q.precisa_handoff || q.qualificado;
+  // Decisao do Loop — DETERMINISTICA (nao e o modelo que decide o handoff).
+  // q.qualificado vem do LLM e nao e confiavel isoladamente: recalculamos
+  // a partir do score numerico, que e o dado que o proprio prompt manda o
+  // modelo usar como base (qualificado = score >= SCORE_QUALIFICACAO).
+  const qualificadoPorScore = q.score >= SCORE_QUALIFICACAO;
+  const pronto = q.precisa_handoff || qualificadoPorScore;
 
   if (pronto) {
     handoffs.push({
@@ -150,7 +159,9 @@ export async function orquestrarLeadNovo(input: JornadaInput): Promise<Resultado
     return {
       timeline,
       handoffs,
-      decisao: `Lead qualificado (score ${Math.round(q.score)}) -> handoff pro CEO Comercial, que ja preparou o follow-up.`,
+      decisao: qualificadoPorScore
+        ? `Lead qualificado (score ${Math.round(q.score)}) -> handoff pro CEO Comercial, que ja preparou o follow-up.`
+        : `Lead com handoff solicitado pelo atendimento (score ${Math.round(q.score)}, abaixo do limiar de qualificacao) -> handoff pro CEO Comercial, que ja preparou o follow-up.`,
     };
   }
 
